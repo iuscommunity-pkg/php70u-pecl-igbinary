@@ -1,3 +1,5 @@
+# IUS spec file for php70u-pecl-foobar, forked from:
+#
 # Fedora spec file for php-pecl-igbinary
 #
 # Copyright (c) 2010-2016 Remi Collet
@@ -9,28 +11,49 @@
 %global extname    igbinary
 %global with_zts   0%{?__ztsphp:1}
 %global ini_name   40-%{extname}.ini
+%global php_base   php70u
 
 Summary:        Replacement for the standard PHP serializer
-Name:           php-pecl-igbinary
+Name:           %{php_base}-pecl-igbinary
 Version:        2.0.0
-Release:        1%{?dist}
+Release:        1.ius%{?dist}
 Source0:        http://pecl.php.net/get/%{extname}-%{version}.tgz
 License:        BSD
 Group:          System Environment/Libraries
 
 URL:            http://pecl.php.net/package/igbinary
 
-BuildRequires:  php-pear
-BuildRequires:  php-devel >= 5.2.0
-BuildRequires:  php-pecl-apcu-devel
+BuildRequires:  %{php_base}-pear
+BuildRequires:  %{php_base}-devel
+BuildRequires:  %{php_base}-pecl-apcu-devel
 
+Requires(post): %{php_base}-pear
+Requires(postun): %{php_base}-pear
 Requires:       php(zend-abi) = %{php_zend_api}
 Requires:       php(api) = %{php_core_api}
 
+# provide the stock name
+Provides:       php-pecl-%{extname} = %{version}
+Provides:       php-pecl-%{extname}%{?_isa} = %{version}
+
+# provide the stock and IUS names without pecl
 Provides:       php-%{extname} = %{version}
 Provides:       php-%{extname}%{?_isa} = %{version}
+Provides:       %{php_base}-%{extname} = %{version}
+Provides:       %{php_base}-%{extname}%{?_isa} = %{version}
+
+# provide the stock and IUS names in pecl() format
 Provides:       php-pecl(%{extname}) = %{version}
 Provides:       php-pecl(%{extname})%{?_isa} = %{version}
+Provides:       %{php_base}-pecl(%{extname}) = %{version}
+Provides:       %{php_base}-pecl(%{extname})%{?_isa} = %{version}
+
+# conflict with the stock name
+Conflicts:      php-pecl-%{extname} < %{version}
+
+%{?filter_provides_in: %filter_provides_in %{php_extdir}/.*\.so$}
+%{?filter_provides_in: %filter_provides_in %{php_ztsextdir}/.*\.so$}
+%{?filter_setup}
 
 
 %description
@@ -45,8 +68,21 @@ based storages for serialized data.
 %package devel
 Summary:       Igbinary developer files (header)
 Group:         Development/Libraries
-Requires:      php-pecl-%{extname}%{?_isa} = %{version}-%{release}
-Requires:      php-devel%{?_isa}
+Requires:      %{php_base}-pecl-%{extname}%{?_isa} = %{version}-%{release}
+Requires:      %{php_base}-devel%{?_isa}
+
+# provide the stock name
+Provides:       php-pecl-%{extname}-devel = %{version}
+Provides:       php-pecl-%{extname}-devel%{?_isa} = %{version}
+
+# provide the stock and IUS names without pecl
+Provides:       php-%{extname}-devel = %{version}
+Provides:       php-%{extname}-devel%{?_isa} = %{version}
+Provides:       %{php_base}-%{extname}-devel = %{version}
+Provides:       %{php_base}-%{extname}-devel%{?_isa} = %{version}
+
+# conflict with the stock name
+Conflicts:      php-pecl-%{extname}-devel < %{version}
 
 %description devel
 These are the files needed to compile programs using Igbinary
@@ -104,7 +140,7 @@ make %{?_smp_mflags}
 %install
 make install -C NTS INSTALL_ROOT=%{buildroot}
 
-install -D -m 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
+install -D -m 644 package.xml %{buildroot}%{pecl_xmldir}/%{extname}.xml
 
 install -D -m 644 %{ini_name} %{buildroot}%{php_inidir}/%{ini_name}
 
@@ -163,11 +199,25 @@ REPORT_EXIT_STATUS=1 \
 %endif
 
 
+%if 0%{?pecl_install:1}
+%post
+%{pecl_install} %{pecl_xmldir}/%{extname}.xml >/dev/null || :
+%endif
+
+
+%if 0%{?pecl_uninstall:1}
+%postun
+if [ $1 -eq 0 ]; then
+    %{pecl_uninstall} %{extname} >/dev/null || :
+fi
+%endif
+
+
 %files
 %doc %{pecl_docdir}/%{extname}
 %config(noreplace) %{php_inidir}/%{ini_name}
 %{php_extdir}/%{extname}.so
-%{pecl_xmldir}/%{name}.xml
+%{pecl_xmldir}/%{extname}.xml
 
 %if %{with_zts}
 %config(noreplace) %{php_ztsinidir}/%{ini_name}
@@ -185,6 +235,10 @@ REPORT_EXIT_STATUS=1 \
 
 
 %changelog
+* Wed Nov 23 2016 Carl George <carl.george@rackspace.com> - 2.0.0-1.ius
+- Port from Fedora to IUS
+- Re-add scriptlets (file triggers not yet available in EL)
+
 * Mon Nov 21 2016 Remi Collet <remi@fedoraproject.org> - 2.0.0-1
 - update to 2.0.0
 
