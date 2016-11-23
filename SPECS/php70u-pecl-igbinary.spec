@@ -1,4 +1,4 @@
-# IUS spec file for php70u-pecl-foobar, forked from:
+# IUS spec file for php70u-pecl-igbinary, forked from:
 #
 # Fedora spec file for php-pecl-igbinary
 #
