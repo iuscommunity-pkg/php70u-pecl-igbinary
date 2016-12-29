@@ -15,7 +15,7 @@
 
 Summary:        Replacement for the standard PHP serializer
 Name:           %{php_base}-pecl-igbinary
-Version:        2.0.0
+Version:        2.0.1
 Release:        1.ius%{?dist}
 Source0:        http://pecl.php.net/get/%{extname}-%{version}.tgz
 License:        BSD
@@ -235,6 +235,9 @@ fi
 
 
 %changelog
+* Thu Dec 29 2016 Carl George <carl.george@rackspace.com> - 2.0.1-1.ius
+- Latest upstream
+
 * Wed Nov 23 2016 Carl George <carl.george@rackspace.com> - 2.0.0-1.ius
 - Port from Fedora to IUS
 - Re-add scriptlets (file triggers not yet available in EL)
