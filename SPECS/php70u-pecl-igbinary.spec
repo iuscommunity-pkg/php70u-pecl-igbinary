@@ -66,10 +66,10 @@ based storages for serialized data.
 
 
 %package devel
-Summary:       Igbinary developer files (header)
-Group:         Development/Libraries
-Requires:      %{php_base}-pecl-%{extname}%{?_isa} = %{version}-%{release}
-Requires:      %{php_base}-devel%{?_isa}
+Summary:        Igbinary developer files (header)
+Group:          Development/Libraries
+Requires:       %{name}%{?_isa} = %{version}-%{release}
+Requires:       %{php_base}-devel%{?_isa}
 
 # provide the stock name
 Provides:       php-pecl-%{extname}-devel = %{version}
@@ -84,6 +84,7 @@ Provides:       %{php_base}-%{extname}-devel%{?_isa} = %{version}
 # conflict with the stock name
 Conflicts:      php-pecl-%{extname}-devel < %{version}
 
+
 %description devel
 These are the files needed to compile programs using Igbinary
 
@@ -92,7 +93,7 @@ These are the files needed to compile programs using Igbinary
 %setup -q -c
 mv %{extname}-%{version} NTS
 
-cd NTS
+pushd NTS
 
 # Check version
 subdir="php$(%{__php} -r 'echo PHP_MAJOR_VERSION;')"
@@ -101,7 +102,7 @@ if test "x${extver}" != "x%{version}%{?prever}"; then
    : Error: Upstream version is ${extver}, expecting %{version}%{?prever}.
    exit 1
 fi
-cd ..
+popd
 
 %if %{with_zts}
 cp -r NTS ZTS
@@ -124,16 +125,18 @@ EOF
 
 
 %build
-cd NTS
+pushd NTS
 %{_bindir}/phpize
 %configure --with-php-config=%{_bindir}/php-config
 make %{?_smp_mflags}
+popd
 
 %if %{with_zts}
-cd ../ZTS
+pushd ZTS
 %{_bindir}/zts-phpize
 %configure --with-php-config=%{_bindir}/zts-php-config
 make %{?_smp_mflags}
+popd
 %endif
 
 
@@ -151,7 +154,7 @@ install -D -m 644 %{ini_name} %{buildroot}%{php_ztsinidir}/%{ini_name}
 %endif
 
 # Test & Documentation
-cd NTS
+pushd NTS
 for i in $(grep 'role="test"' ../package.xml | sed -e 's/^.*name="//;s/".*$//')
 do [ -f $i       ] && install -Dpm 644 $i       %{buildroot}%{pecl_testdir}/%{extname}/$i
    [ -f tests/$i ] && install -Dpm 644 tests/$i %{buildroot}%{pecl_testdir}/%{extname}/tests/$i
@@ -159,6 +162,7 @@ done
 for i in $(grep 'role="doc"' ../package.xml | sed -e 's/^.*name="//;s/".*$//')
 do install -Dpm 644 $i %{buildroot}%{pecl_docdir}/%{extname}/$i
 done
+popd
 
 
 %check
@@ -171,17 +175,18 @@ if [ -f %{php_extdir}/apcu.so ]; then
 fi
 
 : simple NTS module load test, without APC, as optional
-%{_bindir}/php --no-php-ini \
+%{__php} --no-php-ini \
     --define extension=%{buildroot}%{php_extdir}/%{extname}.so \
     --modules | grep %{extname}
 
 : upstream test suite
-cd NTS
-TEST_PHP_EXECUTABLE=%{_bindir}/php \
+pushd NTS
+TEST_PHP_EXECUTABLE=%{__php} \
 TEST_PHP_ARGS="-n $MOD -d extension=$PWD/modules/%{extname}.so" \
 NO_INTERACTION=1 \
 REPORT_EXIT_STATUS=1 \
-%{_bindir}/php -n run-tests.php --show-diff
+%{__php} -n run-tests.php --show-diff
+popd
 
 %if %{with_zts}
 : simple ZTS module load test, without APC, as optional
@@ -190,27 +195,24 @@ REPORT_EXIT_STATUS=1 \
     --modules | grep %{extname}
 
 : upstream test suite
-cd ../ZTS
+pushd ZTS
 TEST_PHP_EXECUTABLE=%{__ztsphp} \
 TEST_PHP_ARGS="-n $MOD -d extension=$PWD/modules/%{extname}.so" \
 NO_INTERACTION=1 \
 REPORT_EXIT_STATUS=1 \
 %{__ztsphp} -n run-tests.php --show-diff
+popd
 %endif
 
 
-%if 0%{?pecl_install:1}
 %post
 %{pecl_install} %{pecl_xmldir}/%{extname}.xml >/dev/null || :
-%endif
 
 
-%if 0%{?pecl_uninstall:1}
 %postun
 if [ $1 -eq 0 ]; then
     %{pecl_uninstall} %{extname} >/dev/null || :
 fi
-%endif
 
 
 %files
